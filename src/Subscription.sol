@@ -118,7 +118,7 @@ contract Subscription is Ownable,ReentrancyGuard{
         isValidUserName[name] = true;
     }
     function addPlan(uint planId,uint _price,uint _duration) public onlyCreator{
-        require(_price>0,"Invalidd price");
+        require(_price>0,"Invalid price");
         require(_duration>0,"Invalid Duration");
         require(creatorPlans[msg.sender][planId].price == 0, "Plan exists");
         creatorPlans[msg.sender][planId] = CreatorPlans({

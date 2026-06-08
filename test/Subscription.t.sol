@@ -5,15 +5,41 @@ import {Test} from "forge-std/Test.sol";
 import {Subscription} from "../src/Subscription.sol";
 import "forge-std/console.sol";
 import "forge-std/console.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 
 contract SubscriptionTest is Test{
     Subscription public sub;
+    address owner = makeAddr("owner");
     address creator1 = makeAddr("creator1");
 
     function setUp() public {
+        vm.startPrank(owner);
         sub = new Subscription();
         sub.addCreator(creator1);
         console.log("Hello World");
+        vm.stopPrank();
+    }
+    function test_Pause() public {
+        vm.prank(owner);
+        sub.pauseContract();
+        assertTrue(sub.paused());
+
+        vm.expectRevert("Already Paused");
+        vm.prank(owner);
+        sub.pauseContract();
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector,address(this)));
+        sub.pauseContract();
+    }
+    function test_resume() public {
+        vm.startPrank(owner);
+        sub.pauseContract();
+        sub.resumeContract();
+        vm.stopPrank();
+
+        vm.expectRevert();(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        sub.resumeContract();
     }
     function testFuzz_SetCreatorData(string memory name) public {
         vm.prank(creator1);
