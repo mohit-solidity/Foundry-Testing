@@ -40,8 +40,10 @@ contract SubscriptionTest is Test{
 
         vm.expectRevert();(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         sub.resumeContract();
+        assertFalse(sub.paused());
     }
     function testFuzz_SetCreatorData(string memory name) public {
+        vm.assume(bytes(name).length>0);
         vm.prank(creator1);
         sub.setCreatorData(name);
         (string memory _name,,,) = sub.creatorProfile(creator1);
