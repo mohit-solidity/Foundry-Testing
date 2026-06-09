@@ -17,7 +17,6 @@ contract SubscriptionTest is Test{
         vm.startPrank(owner);
         sub = new Subscription();
         sub.addCreator(creator1);
-        console.log("Hello World");
         vm.stopPrank();
     }
     function test_Pause() public {
@@ -38,7 +37,7 @@ contract SubscriptionTest is Test{
         sub.resumeContract();
         vm.stopPrank();
 
-        vm.expectRevert();(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         sub.resumeContract();
         assertFalse(sub.paused());
     }
@@ -46,8 +45,28 @@ contract SubscriptionTest is Test{
         vm.assume(bytes(name).length>0);
         vm.prank(creator1);
         sub.setCreatorData(name);
-        (string memory _name,,,) = sub.creatorProfile(creator1);
+        (string memory _name,,,bool exists) = sub.creatorProfile(creator1);
         console.log(_name);
+        console.log("This Is For Name");
+        console.log(exists);
         assertEq(_name, name);
+    }
+    function testFuzz_addPlan(uint _planId,uint _price,uint _duration) public{
+        vm.assume(_price>0);
+        vm.assume(_duration>0);
+        vm.assume(_planId>0);
+        vm.prank(creator1);
+        sub.addPlan(_planId,_price,_duration);
+        (uint price,uint duration,bool isActive) = sub.creatorPlans(creator1,_planId);
+        assertEq(_price, price);
+        assertEq(_duration,duration);
+        assertTrue(isActive);
+    }
+    function testFuzz_AddPlan_RevertForNotCreator(address randomUser,uint _planId,uint _price,uint _duration) public {
+        vm.assume(randomUser != creator1);
+        vm.assume(randomUser != address(0));
+        vm.expectRevert("Not A Creator");
+        vm.prank(randomUser);
+        sub.addPlan(_planId, _price, _duration);
     }
 }

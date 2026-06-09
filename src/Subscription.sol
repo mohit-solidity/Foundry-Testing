@@ -65,7 +65,7 @@ contract Subscription is Ownable,ReentrancyGuard{
 
     // Modifiers
     modifier onlyCreator() {
-        require(isCreator[msg.sender], "Not a creator");
+        require(isCreator[msg.sender], "Not A Creator");
         require(creatorProfile[msg.sender].exists, "Creator profile missing");
         _;
     }
