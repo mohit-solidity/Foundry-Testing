@@ -135,7 +135,7 @@ contract Subscription is Ownable,ReentrancyGuard{
         creatorPlans[msg.sender][planId].isActive = true;
         emit PlanActivated(msg.sender, planId);
     }
-    function deactivatePlan(uint planId) external onlyCreator {
+    function deActivatePlan(uint planId) external onlyCreator {
         require(creatorPlans[msg.sender][planId].price != 0, "Plan not found");
         creatorPlans[msg.sender][planId].isActive = false;
         emit PlanDeactivated(msg.sender, planId);
