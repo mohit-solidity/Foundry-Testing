@@ -47,7 +47,7 @@ contract SubscriptionTest is Test{
         vm.assume(bytes(name).length>0);
         vm.prank(creator1);
         sub.setCreatorData(name);
-        (string memory _name,,,bool exists) = sub.creatorProfile(creator1);
+        (string memory _name,,,) = sub.creatorProfile(creator1);
         assertEq(_name, name);
         //Another Creator Can't Take Same Name
         vm.expectRevert("UserName Already Occupied");
@@ -97,14 +97,27 @@ contract SubscriptionTest is Test{
         vm.prank(randomUser);
         sub.addPlan(_planId, _price, _duration);
     }
-    function testFuzz_DeActivatePlan(uint planId,uint price,uint duration) public {
+    //Creator Can Activate Again It's Deactivated Plan
+    function testFuzz_ActiveAgain(uint planId,uint price,uint duration) public {
         vm.assume(planId>0);
         vm.assume(duration>0);
         vm.assume(price>0);
         vm.startPrank(creator1);
         sub.addPlan(planId, price, duration);
         //Creator 1 Deactivate The Plan
+        vm.expectEmit(true, false, false, true,address(sub));
+        emit Subscription.PlanDeactivated(creator1,planId);
         sub.deActivatePlan(planId);
         vm.stopPrank();
+        //check If It's DeActivated
+        (,,bool isActive) = sub.creatorPlans(creator1,planId);
+        assertFalse(isActive);
+        //Creator Activate Again
+        vm.expectEmit(true, false, false, true,address(sub));
+        emit Subscription.PlanActivated(creator1,planId);
+        vm.prank(creator1);
+        sub.activatePlan(planId);
+        (,,isActive) = sub.creatorPlans(creator1,planId);
+        assertTrue(isActive);
     }
 }
