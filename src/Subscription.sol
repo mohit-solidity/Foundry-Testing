@@ -90,7 +90,7 @@ contract Subscription is Ownable,ReentrancyGuard{
         emit ContractResumed(block.timestamp);
     }
     function changeFee(uint64 _APY) public onlyOwner{
-        require(_APY<=1000,"Max Fee Is 10%");
+        require(_APY >= 100 && _APY<=1000,"Max Fee Is 10%");
         feeAPY = _APY;
     }
     function addCreator(address _creator) public onlyOwner whenNotPaused{
@@ -118,9 +118,9 @@ contract Subscription is Ownable,ReentrancyGuard{
         isValidUserName[name] = true;
     }
     function addPlan(uint planId,uint _price,uint _duration) public onlyCreator{
-        require(_price>0,"Invalid price");
-        require(_duration>0,"Invalid Duration");
-        require(planId>0,"Plan Id Is Invalid");
+        require(_price>0 && _price <= 1000,"Invalid price");
+        require(_duration>0 &&  _duration<=365 days,"Invalid Duration");
+        require(planId>0 && planId<=10000,"Plan Id Is Invalid");
         require(creatorPlans[msg.sender][planId].price == 0, "Plan exists");
         creatorPlans[msg.sender][planId] = CreatorPlans({
             price:_price,
@@ -147,7 +147,6 @@ contract Subscription is Ownable,ReentrancyGuard{
         CreatorPlans memory p = creatorPlans[_creator][planId];
         require(c.exists,"Creator Doesn't exists");
         require(p.isActive, "Plan Not Active or Not Found");
-        require(creatorPlans[_creator][planId].price != 0, "Plan not found");
         require(creatorPlans[_creator][planId].price != 0, "Plan not found");
         require(p.price!=0,"Craetor hasn't Set Their Monthly Pay Yet");
         require(msg.value==p.price,"Make sure To Send Same Amount Of User");

@@ -21,6 +21,13 @@ contract SubscriptionTest is Test{
         sub.addCreator(creator2);
         vm.stopPrank();
     }
+    function testFuzz_ChangeFee(uint64 _fee) public{
+        vm.assume(_fee>=100);
+        vm.assume(_fee <=1000);
+        vm.prank(owner);
+        sub.changeFee(_fee);
+        assertEq(_fee,sub.feeAPY());
+    }
     function test_Pause() public {
         vm.prank(owner);
         sub.pauseContract();
@@ -78,6 +85,9 @@ contract SubscriptionTest is Test{
         sub.setCreatorData(name2);
     }
     function testFuzz_addPlan(uint _planId,uint _price,uint _duration) public{
+        uint _planId = bound(_planId,1,10000);
+        uint _price = bound(_price,1,1000);
+        uint _duration = bound(_duration,1 days,365 days);
         vm.assume(_price>0);
         vm.assume(_duration>0);
         vm.assume(_planId>0);
@@ -91,17 +101,20 @@ contract SubscriptionTest is Test{
         assertTrue(isActive);
     }
     function testFuzz_AddPlan_RevertForNotCreator(address randomUser,uint _planId,uint _price,uint _duration) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1,1000);
+        uint duration = bound(_duration,1 days,365 days);
         vm.assume(randomUser != creator1);
         vm.assume(randomUser != address(0));
         vm.expectRevert("Not A Creator");
         vm.prank(randomUser);
-        sub.addPlan(_planId, _price, _duration);
+        sub.addPlan(planId, price, duration);
     }
     //Creator Can Activate Again It's Deactivated Plan
-    function testFuzz_ActiveAgain(uint planId,uint price,uint duration) public {
-        vm.assume(planId>0);
-        vm.assume(duration>0);
-        vm.assume(price>0);
+    function testFuzz_ActiveAgain(uint _planId,uint _price,uint _duration) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1,1000);
+        uint duration = bound(_duration,1 days,365 days);
         vm.startPrank(creator1);
         sub.addPlan(planId, price, duration);
         //Creator 1 Deactivate The Plan
@@ -119,5 +132,19 @@ contract SubscriptionTest is Test{
         sub.activatePlan(planId);
         (,,isActive) = sub.creatorPlans(creator1,planId);
         assertTrue(isActive);
+    }
+    function testFuzz_BuySubscription(uint _price,uint _planId,uint _duration) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1,1000);
+        uint duration = bound(_duration,1 days,365 days);
+        vm.prank(creator1);
+        //Creator Set His Plans
+        sub.addPlan(planId, price, duration);
+        //User Buy Creator Plan
+        address user = makeAddr("user");
+        vm.deal(user,price);
+        vm.prank(user);
+        sub.buyOrRenewSubscription{value:price}(creator1, planId);
+        console.log(sub.feeCollected());
     }
 }
