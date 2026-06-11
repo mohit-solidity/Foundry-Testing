@@ -146,5 +146,13 @@ contract SubscriptionTest is Test{
         vm.prank(user);
         sub.buyOrRenewSubscription{value:price}(creator1, planId);
         console.log(sub.feeCollected());
+        console.log(block.timestamp);
+        console.log(duration);
+        //User Can Buy Again When Expired
+        vm.warp(duration+1 days);
+        console.log(block.timestamp);
+        vm.deal(user,price);
+        vm.prank(user);
+        sub.buyOrRenewSubscription{value:price}(creator1, planId);
     }
 }

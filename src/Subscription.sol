@@ -150,7 +150,7 @@ contract Subscription is Ownable,ReentrancyGuard{
         require(creatorPlans[_creator][planId].price != 0, "Plan not found");
         require(p.price!=0,"Craetor hasn't Set Their Monthly Pay Yet");
         require(msg.value==p.price,"Make sure To Send Same Amount Of User");
-        require(subscriptionBoughtDuration[msg.sender][_creator]<block.timestamp,"Subscription Still Active");
+        require(subscriptionBoughtDuration[msg.sender][_creator]<=block.timestamp,"Subscription Still Active");
         uint currentExpiry = subscriptionBoughtDuration[msg.sender][_creator];
         uint expiry;
         if(currentExpiry>block.timestamp){
