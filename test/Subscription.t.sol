@@ -132,7 +132,7 @@ contract SubscriptionTest is Test{
     }
     function testFuzz_BuySubscription(uint _price,uint _planId,uint _duration) public {
         uint planId = bound(_planId,1,10000);
-        uint price = bound(_price,1,1000);
+        uint price = bound(_price,1 ether,1000 ether);
         uint duration = bound(_duration,1 days,365 days);
         vm.prank(creator1);
         //Creator Set His Plans
@@ -154,7 +154,7 @@ contract SubscriptionTest is Test{
     }
     function testFuzz_CreatorWithdraw(uint _price,uint _planId,uint _duration,uint _amount) public {
         uint planId = bound(_planId,1,10000);
-        uint price = bound(_price,1,1000);
+        uint price = bound(_price,1 ether,1000 ether);
         uint duration = bound(_duration,1 days,365 days);
         vm.prank(creator1);
         //Creator Set His Plans
@@ -182,9 +182,61 @@ contract SubscriptionTest is Test{
             emit Subscription.CreatorWithdraw(creator1,rFee);
             vm.prank(creator1);
             sub.creatorWithdraw(rFee);
+        }else{
+            console.log("Remaining Fee Is Zero");
         }
         (,cFee,,) = sub.creatorProfile(creator1);
         console.log("Fee After Withdrawing All");
         console.log(cFee);
-    }   
+    }
+    function testFuzz_OwnerCollectFee(uint _price,uint _planId,uint _duration,uint _amount) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1 ether,1000 ether);
+        uint duration = bound(_duration,1 days,365 days);
+        vm.prank(creator1);
+        //Creator Set His Plans
+        sub.addPlan(planId, price, duration);
+        //User Buy Creator Plan
+        address user = makeAddr("user");
+        vm.deal(user,price);
+        vm.prank(user);
+        sub.buyOrRenewSubscription{value:price}(creator1, planId);
+        address user1 = makeAddr("user1");
+        vm.deal(user1,price);
+        vm.prank(user1);
+        sub.buyOrRenewSubscription{value:price}(creator1, planId);
+        uint fee = sub.feeCollected();
+        console.log(price);
+        console.log(fee);
+        uint amount = bound(_amount,1,fee);
+        //Owner Withdraw Part Of Fee
+        vm.expectEmit(true, false, false, true);
+        emit Subscription.OwnerWithdrawed(owner,amount);
+        vm.prank(owner);
+        sub.collectFee(amount);
+        //Remaining Fee When Deducted From Total Fee
+        uint rFee = sub.feeCollected();
+        console.log(rFee);
+        if(rFee>0){
+            console.log("Entering The rFee > 0");
+            vm.expectEmit(true, false, false, true);
+            emit Subscription.OwnerWithdrawed(owner,rFee);
+            vm.prank(owner);
+            sub.collectFee(rFee);
+        }
+        else if(rFee==0){
+            vm.expectRevert("Invalid Fee");
+            vm.prank(owner);
+            sub.collectFee(rFee);
+        }
+        //After Withdrawing Fee Will Be Zero
+        uint tFee = sub.feeCollected();
+        console.log("Fee After Withdrawing All Owner Fee");
+        console.log(tFee);
+    }
+    function test_GetCreators() public view returns(address[] memory){
+        address[] memory creators = sub.getAllCreators();
+        return creators;
+    }
+
 }

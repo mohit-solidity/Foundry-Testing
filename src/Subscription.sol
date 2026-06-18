@@ -48,7 +48,7 @@ contract Subscription is Ownable,ReentrancyGuard{
     event CreatorRemoved(address indexed _creator);
     event SubscriptionBought(address indexed _user,address indexed _creator,uint planId,uint amount,uint expiry);
     event CreatorWithdraw(address indexed _creator,uint amount);
-    event OwnerWithdrawed(uint amount);
+    event OwnerWithdrawed(address indexed owner,uint amount);
     event ContractPaused(uint time);
     event ContractResumed(uint time);
     event PlanAdded(address indexed creator, uint planId);
@@ -118,7 +118,7 @@ contract Subscription is Ownable,ReentrancyGuard{
         isValidUserName[name] = true;
     }
     function addPlan(uint planId,uint _price,uint _duration) public onlyCreator{
-        require(_price>0 && _price <= 1000,"Invalid price");
+        require(_price>0 ether && _price <= 1000 ether,"Invalid price");
         require(_duration>0 &&  _duration<=365 days,"Invalid Duration");
         require(planId>0 && planId<=10000,"Plan Id Is Invalid");
         require(creatorPlans[msg.sender][planId].price == 0, "Plan exists");
@@ -151,13 +151,8 @@ contract Subscription is Ownable,ReentrancyGuard{
         require(p.price!=0,"Craetor hasn't Set Their Monthly Pay Yet");
         require(msg.value==p.price,"Make sure To Send Same Amount Of User");
         require(subscriptionBoughtDuration[msg.sender][_creator]<=block.timestamp,"Subscription Still Active");
-        uint currentExpiry = subscriptionBoughtDuration[msg.sender][_creator];
         uint expiry;
-        if(currentExpiry>block.timestamp){
-            expiry = currentExpiry + (p.duration);
-        }else{
-            expiry = (block.timestamp+(p.duration));
-        }
+        expiry = (block.timestamp+(p.duration));
         if(!hasSubscribedBefore[msg.sender][_creator]){
             c.totalSubscribers ++;
         }
@@ -182,13 +177,8 @@ contract Subscription is Ownable,ReentrancyGuard{
         require(creatorPlans[_creator][planId].price != 0, "Plan not found");
         require(p.duration!=0,"Craetor hasn't Set Their Monthly Pay Yet");
         require(msg.value==p.price,"Make sure To Send Same Amount Creator Set");
-        uint currentExpiry = subscriptionBoughtDuration[_user][_creator];
         uint expiry;
-        if(currentExpiry>block.timestamp){
-            expiry = currentExpiry + (p.duration);
-        }else{
-            expiry = (block.timestamp+(p.duration));
-        }
+        expiry = (block.timestamp+(p.duration));
         if(!hasSubscribedBefore[_user][_creator]){
             c.totalSubscribers ++;
         }
@@ -215,11 +205,12 @@ contract Subscription is Ownable,ReentrancyGuard{
         return (subscriptionNFT.isValidSubscription(user,_creator));
     }
     function collectFee(uint amount) public onlyOwner whenNotPaused{
+        require(amount>0,"Invalid Fee");
         if(amount>feeCollected) revert NotEnoughBalance(amount,feeCollected); 
         feeCollected -= amount;
         (bool success,) = payable(msg.sender).call{value:amount}("");
         if(!success) revert TransactionFailed();
-        emit OwnerWithdrawed(amount);
+        emit OwnerWithdrawed(msg.sender,amount);
     }
     function getAllCreators() public view returns(address[] memory){
         return creators;
