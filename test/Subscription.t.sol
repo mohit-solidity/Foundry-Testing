@@ -88,9 +88,6 @@ contract SubscriptionTest is Test{
         uint _planId = bound(_planId,1,10000);
         uint _price = bound(_price,1,1000);
         uint _duration = bound(_duration,1 days,365 days);
-        vm.assume(_price>0);
-        vm.assume(_duration>0);
-        vm.assume(_planId>0);
         vm.expectEmit(true, false, false, true,address(sub));
         emit Subscription.PlanAdded(creator1,_planId);
         vm.prank(creator1);
@@ -143,6 +140,8 @@ contract SubscriptionTest is Test{
         //User Buy Creator Plan
         address user = makeAddr("user");
         vm.deal(user,price);
+        vm.expectEmit(true, true, false, true,address(sub));
+        emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
         vm.prank(user);
         sub.buyOrRenewSubscription{value:price}(creator1, planId);
         console.log(sub.feeCollected());
@@ -151,6 +150,8 @@ contract SubscriptionTest is Test{
         //User Can Buy Again When Expired
         vm.warp(duration+1 days);
         console.log(block.timestamp);
+        vm.expectEmit(true, true, false, true,address(sub));
+        emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
         vm.deal(user,price);
         vm.prank(user);
         sub.buyOrRenewSubscription{value:price}(creator1, planId);
