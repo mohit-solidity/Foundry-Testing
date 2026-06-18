@@ -204,7 +204,8 @@ contract Subscription is Ownable,ReentrancyGuard{
     }
     function creatorWithdraw(uint amount) public onlyCreator nonReentrant whenNotPaused{
         Creator storage c = creatorProfile[msg.sender];
-        if(amount>c.totalBalance) revert NotEnoughBalance(amount,c.totalBalance); 
+        require(amount>0,"Invalid Amount");
+        if(amount > c.totalBalance) revert NotEnoughBalance(amount,c.totalBalance); 
         c.totalBalance -= amount;
         (bool success,) = payable(msg.sender).call{value:amount}("");
         if(!success) revert TransactionFailed();

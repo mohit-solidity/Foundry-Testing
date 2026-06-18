@@ -84,17 +84,17 @@ contract SubscriptionTest is Test{
         vm.prank(creator2);
         sub.setCreatorData(name2);
     }
-    function testFuzz_addPlan(uint _planId,uint _price,uint _duration) public{
-        uint _planId = bound(_planId,1,10000);
-        uint _price = bound(_price,1,1000);
-        uint _duration = bound(_duration,1 days,365 days);
+    function testFuzz_addPlan(uint planId,uint price,uint duration) public{
+        uint _planId = bound(planId,1,10000);
+        uint _price = bound(price,1,1000);
+        uint _duration = bound(duration,1 days,365 days);
         vm.expectEmit(true, false, false, true,address(sub));
         emit Subscription.PlanAdded(creator1,_planId);
         vm.prank(creator1);
         sub.addPlan(_planId,_price,_duration);
-        (uint price,uint duration,bool isActive) = sub.creatorPlans(creator1,_planId);
-        assertEq(_price, price);
-        assertEq(_duration,duration);
+        (uint cprice,uint cduration,bool isActive) = sub.creatorPlans(creator1,_planId);
+        assertEq(_price, cprice);
+        assertEq(_duration,cduration);
         assertTrue(isActive);
     }
     function testFuzz_AddPlan_RevertForNotCreator(address randomUser,uint _planId,uint _price,uint _duration) public {
@@ -144,16 +144,47 @@ contract SubscriptionTest is Test{
         emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
         vm.prank(user);
         sub.buyOrRenewSubscription{value:price}(creator1, planId);
-        console.log(sub.feeCollected());
-        console.log(block.timestamp);
-        console.log(duration);
         //User Can Buy Again When Expired
         vm.warp(duration+1 days);
-        console.log(block.timestamp);
         vm.expectEmit(true, true, false, true,address(sub));
         emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
         vm.deal(user,price);
         vm.prank(user);
         sub.buyOrRenewSubscription{value:price}(creator1, planId);
     }
+    function testFuzz_CreatorWithdraw(uint _price,uint _planId,uint _duration,uint _amount) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1,1000);
+        uint duration = bound(_duration,1 days,365 days);
+        vm.prank(creator1);
+        //Creator Set His Plans
+        sub.addPlan(planId, price, duration);
+        //User Buy Creator Plan
+        address user = makeAddr("user");
+        vm.deal(user,price);
+        vm.prank(user);
+        sub.buyOrRenewSubscription{value:price}(creator1, planId);
+        console.log("Fee Before Withdrawing");
+        (,uint cFee,,) = sub.creatorProfile(creator1);
+        console.log(cFee);
+        uint amount = bound(_amount,1,cFee);
+        vm.expectEmit(true, false, false, true);
+        emit Subscription.CreatorWithdraw(creator1,amount);
+        vm.prank(creator1);
+        //Withdrawing Specific Amount
+        sub.creatorWithdraw(amount);
+        (,uint rFee,,) = sub.creatorProfile(creator1);
+        console.log("Fee Remaining After Withdrawing");
+        console.log(rFee);
+        //Withdrawing Full Amount
+        if(rFee>0){
+            vm.expectEmit(true, false, false, true);
+            emit Subscription.CreatorWithdraw(creator1,rFee);
+            vm.prank(creator1);
+            sub.creatorWithdraw(rFee);
+        }
+        (,cFee,,) = sub.creatorProfile(creator1);
+        console.log("Fee After Withdrawing All");
+        console.log(cFee);
+    }   
 }
