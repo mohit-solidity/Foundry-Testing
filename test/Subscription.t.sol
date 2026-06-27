@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {Test} from "forge-std/Test.sol";
 import {Subscription} from "../src/Subscription.sol";
 import "forge-std/console.sol";
-import "forge-std/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 
