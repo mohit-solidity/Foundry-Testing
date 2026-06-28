@@ -167,6 +167,42 @@ contract SubscriptionTest is Test{
         console.log("Remaining Fee");
         console.log(fee);
     }
+    function testFuzz_GiftSubscription(uint _price,uint _planId,uint _duration) public {
+        uint planId = bound(_planId,1,10000);
+        uint price = bound(_price,1 ether,1000 ether);
+        uint duration = bound(_duration,1 days,365 days);
+        vm.prank(creator1);
+        //Creator Set His Plans
+        sub.addPlan(planId, price, duration);
+        //User Buy Creator Plan
+        address user = makeAddr("user");
+        vm.deal(user,price);
+        vm.expectEmit(true, true, false, true,address(sub));
+        emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
+        vm.prank(user);
+        sub.giftSubscription{value:price}(user, planId,creator1);
+        uint fee = sub.feeCollected();
+        uint remBalance = price - fee;
+        (,uint totalBalance,uint totalSubscribers,) = sub.creatorProfile(creator1);
+        console.log(totalBalance);
+        console.log(remBalance);
+        vm.assertEq(totalBalance, remBalance);
+        vm.assertEq(totalSubscribers, 1);
+        //User Can Buy Again When Expired
+        vm.warp(duration+1 days);
+        vm.expectEmit(true, true, false, true,address(sub));
+        emit Subscription.SubscriptionBought(user,creator1,planId,price,(block.timestamp + duration));
+        vm.deal(user,price);
+        vm.prank(user);
+        sub.giftSubscription{value:price}(user, planId,creator1);
+        (,totalBalance,totalSubscribers,) = sub.creatorProfile(creator1);
+        remBalance = totalBalance - fee;
+        fee = sub.feeCollected();
+        console.log(totalBalance);
+        console.log(remBalance);
+        console.log("Remaining Fee");
+        console.log(fee);
+    }
     function testFuzz_CreatorWithdraw(uint _price,uint _planId,uint _duration,uint _amount) public {
         uint planId = bound(_planId,1,10000);
         uint price = bound(_price,1 ether,1000 ether);
@@ -249,9 +285,6 @@ contract SubscriptionTest is Test{
         console.log("Fee After Withdrawing All Owner Fee");
         console.log(tFee);
     }
-    function test_GetCreators() public view returns(address[] memory){
-        address[] memory creators = sub.getAllCreators();
-        return creators;
-    }
+
 
 }
